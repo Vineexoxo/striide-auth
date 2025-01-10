@@ -13,14 +13,14 @@
  *           schema:
  *             type: object
  *             properties:
- *               username:
+ *               email:
  *                 type: string
- *                 description: The username of the user.
+ *                 description: The email of the user.
  *                 example: user@example.com
  *               password:
  *                 type: string
  *                 description: The password of the user.
- *                 example: password123
+ *                 example: testpassword
  *     responses:
  *       200:
  *         description: Login successful
@@ -53,18 +53,31 @@
  *                   type: string
  *                   example: "Username and password are required"
  */
+import { Request, Response } from 'express';
 
-export default function handler(req, res) {
-  const { username, password } = req.body;
+import { createClient } from '../../utils/supabase/component'
 
-  if (!username || !password) {
-    return res.status(400).json({ message: 'Username and password are required' });
+export default async function handler(req, res) {
+  const { email, password } = req.body;
+  const supabase = createClient()
+
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'email and password are required' });
+  }
+  // Authenticate the user
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email,
+    password,
+  });
+
+  if (error) {
+    return res.status(401).json({ message: 'Invalid credentials', error: error.message });
   }
 
-  // Fake login validation for demonstration purposes
-  if (username === 'user@example.com' && password === 'password123') {
-    return res.status(200).json({ message: 'Login successful' });
-  } else {
-    return res.status(401).json({ message: 'Invalid credentials' });
-  }
+  return res.status(200).json({
+    message: 'Login successful',
+    user: data.user,
+    session: data.session,
+  });
 }
